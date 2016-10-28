@@ -1,5 +1,5 @@
 {
-    "name": "droptica/codecept-drupal-users",
+    "name": "droptica/codeception-drupal-users",
     "description": "Module that allows for creating test users by drupal API.",
     "license": "MIT",
     "authors": [
