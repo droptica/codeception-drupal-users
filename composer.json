@@ -1,0 +1,27 @@
+{
+    "name": "droptica/codecept-drupal-users",
+    "description": "Module that allows for creating test users by drupal API.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Droptica",
+            "email": "info@droptica.com"
+        }
+    ],
+    "keywords": ["codeception", "test", "testing", "drupal"],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/droptica/codeception-drupal-bootstrap"
+        }
+    ],
+    "require": {
+        "codeception/codeception": "2.*",
+        "droptica/codeception-drupal-bootstrap": "dev-develop"
+    },
+    "autoload": {
+        "psr-4": {
+            "Codeception\\": "src"
+        }
+    }
+}
