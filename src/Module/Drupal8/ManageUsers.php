@@ -73,7 +73,7 @@ class ManageUsers extends \Codeception\Module
           empty($item['pass']) ? $defaultPass : $item['pass'],
           $item['roles'],
           $item['email'],
-          $item['custom_fields']
+          isset($item['custom_fields']) ? $item['custom_fields'] : array()
         );
         $this->drupalTestUsers[$item['name']] = $user;
       }
