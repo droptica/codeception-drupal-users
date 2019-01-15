@@ -163,7 +163,7 @@ class ManageUsers extends \Codeception\Module
       }
 
       // Add profile fields values.
-      if (count($user->custom_fields) > 0) {
+      if ($user->custom_fields != null && count($user->custom_fields) > 0) {
         foreach ($user->custom_fields as $custom_field_name => $custom_field_value) {
           if (isset($custom_field_value['type'])) {
             $field_value = $this->prepareFieldValue($custom_field_value['value'], $custom_field_value['type']);
