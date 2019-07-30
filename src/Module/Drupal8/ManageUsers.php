@@ -137,53 +137,61 @@ class ManageUsers extends \Codeception\Module
    * @param $user DrupalTestUser
    */
   private function createUser($user) {
-    if ($this->userExists($user->name)) {
+    $drupal_user = user_load_by_name($user->name);
+    if (!empty($drupal_user)) {
+      $this->drupalTestUsers[$user->name]->uid = $drupal_user->id();
       $this->message("User '{$user->name}' already exists, skipping.")->writeln();
-    } else {
-      // Create the user.
-      $this->message("Creating test user '{$user->name}'.")->writeln();
+    }
+    else {
+      try {
+        // Create the user.
+        $this->message("Creating test user '{$user->name}'.")->writeln();
 
+        $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
+        $user_account = User::create();
 
-      $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
-      $user_account = User::create();
+        $user_account->setPassword($user->pass);
+        $user_account->enforceIsNew();
+        $user_account->setEmail($user->email);
+        $user_account->setUsername($user->name);
 
-      $user_account->setPassword($user->pass);
-      $user_account->enforceIsNew();
-      $user_account->setEmail($user->email);
-      $user_account->setUsername($user->name);
+        $user_account->set('init', $user->email);
+        $user_account->set('langcode', $language);
+        $user_account->set('preferred_langcode', $language);
+        $user_account->set('preferred_admin_langcode', $language);
 
-      $user_account->set('init', $user->email);
-      $user_account->set('langcode', $language);
-      $user_account->set('preferred_langcode', $language);
-      $user_account->set('preferred_admin_langcode', $language);
+        // Add user roles.
+        foreach ($user->roles as $rid) {
+          $user_account->addRole($rid);
+        }
 
-      // Add user roles.
-      foreach ($user->roles as $rid) {
-        $user_account->addRole($rid);
-      }
-
-      // Add profile fields values.
-      if (count($user->custom_fields) > 0) {
-        foreach ($user->custom_fields as $custom_field_name => $custom_field_value) {
-          if (isset($custom_field_value['type'])) {
-            $field_value = $this->prepareFieldValue($custom_field_value['value'], $custom_field_value['type']);
-            $user_account->set($custom_field_name, $field_value);
-          }
-          else {
-            $user_account->set($custom_field_name, $custom_field_value);
+        // Add profile fields values.
+        if (count($user->custom_fields) > 0) {
+          foreach ($user->custom_fields as $custom_field_name => $custom_field_value) {
+            if (isset($custom_field_value['type'])) {
+              $field_value = $this->prepareFieldValue($custom_field_value['value'], $custom_field_value['type']);
+              $user_account->set($custom_field_name, $field_value);
+            }
+            else {
+              $user_account->set($custom_field_name, $custom_field_value);
+            }
           }
         }
-      }
 
-      $user_account->activate();
-      $saved = $user_account->save();
-      if ($saved) {
-        $this->drupalTestUsers[$user->name]->uid = $user_account->id();
-        $this->message("User '{$user->name}' (uid: {$user_account->id()}) created.")
-          ->writeln();
+        $user_account->activate();
+        $saved = $user_account->save();
+        if ($saved) {
+          $this->drupalTestUsers[$user->name]->uid = $user_account->id();
+          $this->message("User '{$user->name}' (uid: {$user_account->id()}) created.")
+            ->writeln();
+        }
+        else {
+          $this->message("User '{$user->name}' not created.")
+            ->writeln();
+        }
       }
-      else {
-        $this->message("User '{$user->name}' not created.")
+      catch (\Exception $e) {
+        $this->message($e->getMessage())
           ->writeln();
       }
     }
