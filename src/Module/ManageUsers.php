@@ -136,38 +136,48 @@ class ManageUsers extends \Codeception\Module
    * @param $user DrupalTestUser
    */
   private function createUser($user) {
-    if ($this->userExists($user->name)) {
+    $drupal_user = user_load_by_name($user->name);
+    if (!empty($drupal_user)) {
+      $this->drupalTestUsers[$user->name]->uid = $drupal_user->uid;
       $this->message("User '{$user->name}' already exists, skipping.")->writeln();
-    } else {
-      // Create the user.
-      $this->message("Creating test user '{$user->name}'.")->writeln();
+    }
+    else {
+      try {
+        // Create the user.
+        $this->message("Creating test user '{$user->name}'.")->writeln();
 
-      $values = array(
-        'name' => $user->name,
-        'pass' => $user->pass,
-        'mail' => $user->email,
-        'init' => $user->email,
-        'status' => 1,
-        'roles' => $user->roles,
-      );
-      $new_user = user_save('', $values);
-      if (count($user->custom_fields) > 0) {
-        $new_user_wrapper = entity_metadata_wrapper('user', $new_user);
-        foreach ($user->custom_fields as $custom_field_name => $custom_field_value) {
-          if (isset($custom_field_value['type'])) {
-            $field_value = $this->prepareFieldValue($custom_field_value['value'], $custom_field_value['type']);
-            $new_user_wrapper->$custom_field_name
-              ->set($field_value);
+        $values = [
+          'name' => $user->name,
+          'pass' => $user->pass,
+          'mail' => $user->email,
+          'init' => $user->email,
+          'status' => 1,
+          'roles' => $user->roles,
+        ];
+        $new_user = user_save('', $values);
+        if (count($user->custom_fields) > 0) {
+          $new_user_wrapper = entity_metadata_wrapper('user', $new_user);
+          foreach ($user->custom_fields as $custom_field_name => $custom_field_value) {
+            if (isset($custom_field_value['type'])) {
+              $field_value = $this->prepareFieldValue($custom_field_value['value'], $custom_field_value['type']);
+              $new_user_wrapper->$custom_field_name
+                ->set($field_value);
+            }
+            else {
+              $new_user_wrapper->$custom_field_name
+                ->set($custom_field_value);
+            }
           }
-          else {
-            $new_user_wrapper->$custom_field_name
-              ->set($custom_field_value);
-          }
+          $new_user_wrapper->save();
         }
-        $new_user_wrapper->save();
+        $this->drupalTestUsers[$user->name]->uid = $new_user->uid;
+        $this->message("User '{$new_user->name}' (uid: {$new_user->uid}) created.")
+          ->writeln();
       }
-      $this->drupalTestUsers[$user->name]->uid = $new_user->uid;
-      $this->message("User '{$new_user->name}' (uid: {$new_user->uid}) created.")->writeln();
+      catch (\Exception $e) {
+        $this->message($e->getMessage())
+          ->writeln();
+      }
     }
   }
 
@@ -255,4 +265,5 @@ class ManageUsers extends \Codeception\Module
     $user = $this->drupalTestUsers[$username];
     return $user;
   }
+
 }
